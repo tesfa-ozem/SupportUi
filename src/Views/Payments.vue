@@ -10,6 +10,14 @@
                           inset
                           vertical
                         ></v-divider>
+                        <v-text-field
+                            v-model="search"
+                            append-icon="search"
+                            label="Search"
+                            single-line
+                            hide-details
+                            
+                        ></v-text-field>
                         <v-spacer></v-spacer>
                             <v-dialog v-model="dialog" max-width="500px">
                             <v-btn slot="activator" color="primary" dark class="mb-2">New Item</v-btn>
@@ -51,10 +59,13 @@
                                 </v-card>
                             </v-dialog>
                     </v-toolbar>
+                    <template></template>
                     <v-data-table
                       :headers="headers"
                       :items="Payments"
                       class="elevation-1"
+                      hide-actions
+                      :pagination.sync="pagination"
                     >
                         <template slot="items" slot-scope="props">
                           <td>{{ props.item.accountNo}}</td>
@@ -79,6 +90,12 @@
                           <v-btn color="primary" @click="initialize">Reset</v-btn>
                         </template>
                     </v-data-table>
+                    <div class="text-xs-center pt-2">
+                        <v-pagination
+                            v-model="pagination.page"
+                            :length="pages"
+                        ></v-pagination>
+                    </div>
                 </div>
           </v-flex>
       </v-layout>
@@ -126,36 +143,63 @@ export default {
       phoneNo:"",
       description: "",
       transactionDate :""
-    }
+    },
+    search: '',
+    pagination: {page:0},
   }),
 
   computed: {
     formTitle() {
       return this.editedIndex === -1 ? "New Item" : "Edit Item";
-    }
+    },
+    pages () {
+        if (this.pagination.rowsPerPage == null ||
+          this.pagination.totalItems == null
+        ) return 0
+
+        return Math.ceil(this.pagination.totalItems / this.pagination.rowsPerPage)
+      }
   },
 
   watch: {
     dialog(val) {
       val || this.close();
-    }
+    },
+    search(e)
+    {
+      
+       this.GetAllPayments(e) 
+    },
   },
 
   created() {
-    this.initialize();
+    _.debounce(this.initialize(),500);
   },
 
   methods: {
     initialize() {
        this.GetAllPayments();
     },
-    GetAllPayments(){
+    GetAllPayments(s=""){
         const app = this
+        if (this.search=="") {
+        
+       
+      }
+        
         const args = 
         {
+            
             url: '/GetPaymentsAsync',
             method: 'post', 
             baseURL: 'https://localhost:5001/api/Value',
+            
+            data:{
+                sortOrder: "string",
+                currentFilter: "string",
+                searchString: s,
+                page: app.pagination.page
+                }
         };
         axios(args)
         .then(function(response){
@@ -166,7 +210,7 @@ export default {
             console.log(error)
         })
     },
-
+    
     editItem(item) {
       this.editedIndex = this.Payments.indexOf(item);
       this.editedItem = Object.assign({}, item);
@@ -174,12 +218,7 @@ export default {
       
     },
 
-    deleteItem(item) {
-      const index = this.desserts.indexOf(item);
-      confirm("Are you sure you want to delete this item?") &&
-        this.desserts.splice(index, 1);
-    },
-
+    
     close() {
       this.dialog = false;
       setTimeout(() => {
