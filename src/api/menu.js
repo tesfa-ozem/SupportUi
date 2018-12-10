@@ -1,12 +1,7 @@
 /* eslint-disable */
 const Menu =  [
     { header: 'Apps' },
-    {
-      title: 'Dashboard',
-      group: 'apps',
-      icon: 'dashboard',
-      name: 'Dashboard',
-    },
+    
     
     {
       title: 'Payments',

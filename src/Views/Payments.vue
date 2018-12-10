@@ -42,7 +42,29 @@
                                             <v-text-field v-model="editedItem.description" label="Description"></v-text-field>
                                           </v-flex>
                                           <v-flex xs12 sm6 md4>
-                                            <v-text-field v-model="editedItem.transactionDate" label="Transaction Date"></v-text-field>
+                                                <v-menu
+                                                  ref="menu1"
+                                                  :close-on-content-click="false"
+                                                  v-model="menu1"
+                                                  :nudge-right="40"
+                                                  lazy
+                                                  transition="scale-transition"
+                                                  offset-y
+                                                  full-width
+                                                  max-width="290px"
+                                                  min-width="290px"
+                                                >
+                                                  <v-text-field
+                                                    slot="activator"
+                                                    v-model="computedDateFormatted"
+                                                    label="Date"
+                                                    hint="MM/DD/YYYY format"
+                                                    persistent-hint
+                                                    prepend-icon="event"
+                                                   readonly
+                                                  ></v-text-field>
+                                                  <v-date-picker v-model="editedItem.paymentDate" no-title @input="menu1 = false"></v-date-picker>
+                                                </v-menu>
                                           </v-flex>
                                           <v-flex xs12 sm6 md4>
                                             <v-text-field v-model="editedItem.phoneNo" label="Phone"></v-text-field>
@@ -105,7 +127,7 @@
 <script>
 import axios from 'axios'
 export default {
-  data: () => ({
+  data: vm => ({
     dialog: false,
     headers: [
       {
@@ -132,7 +154,8 @@ export default {
       paymentName: "",
       phoneNo:"",
       description: "",
-      transactionDate :""
+      paymentDate :new Date().toISOString().substr(0, 10),
+      
     },
     defaultItem: {
       id:0,
@@ -142,10 +165,14 @@ export default {
       paymentName: "",
       phoneNo:"",
       description: "",
-      transactionDate :""
+      paymentDate :new Date().toISOString().substr(0, 10),
+      
     },
     search: '',
     pagination: {page:0},
+    date: new Date().toISOString().substr(0, 10),
+    
+    menu1: false,
   }),
 
   computed: {
@@ -158,7 +185,10 @@ export default {
         ) return 0
 
         return Math.ceil(this.pagination.totalItems / this.pagination.rowsPerPage)
-      }
+    },
+    computedDateFormatted () {
+        return this.formatDate(this.editedItem.paymentDate)
+    }
   },
 
   watch: {
@@ -170,10 +200,11 @@ export default {
       
        this.GetAllPayments(e) 
     },
+    
   },
 
   created() {
-    _.debounce(this.initialize(),500);
+    this.initialize();
   },
 
   methods: {
@@ -192,7 +223,7 @@ export default {
             
             url: '/GetPaymentsAsync',
             method: 'post', 
-            baseURL: 'https://localhost:5001/api/Value',
+            baseURL: 'http://40.114.117.175/Support/api/Value',
             
             data:{
                 sortOrder: "string",
@@ -228,13 +259,14 @@ export default {
     },
 
     save() {
+        console.log(this.editedItem.transactionDate)
       if (this.editedIndex > -1) {
         Object.assign(this.Payments[this.editedIndex], this.editedItem);
         const args = 
         {
             url: '/EditPayments',
             method: 'post', 
-            baseURL: 'https://localhost:5001/api/Value',
+            baseURL: 'http://40.114.117.175/Support/api/Value',
             data: this.editedItem,
         };
       axios(args)
@@ -262,7 +294,19 @@ export default {
         })
       }
       this.close();
-    }
+    },
+    formatDate (date) {
+        if (!date) return null
+
+        const [year, month, day] = date.split('-')
+        return `${month}/${day}/${year}`
+      },
+      parseDate (date) {
+        if (!date) return null
+
+        const [month, day, year] = date.split('/')
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+      }
   }
 };
 </script>
